@@ -14,7 +14,7 @@ Maven:
 <dependency>
   <groupId>org.kruijff</groupId>
   <artifactId>swingility</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <scope>test</scope>
 </dependency>
 ```
