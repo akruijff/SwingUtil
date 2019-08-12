@@ -1,0 +1,7 @@
+# Tempory files
+~*
+.*.swp
+.*.core
+
+# Maven
+/target/
