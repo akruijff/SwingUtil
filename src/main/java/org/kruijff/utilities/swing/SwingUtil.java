@@ -30,6 +30,7 @@
 package org.kruijff.utilities.swing;
 
 import java.awt.*;
+import java.util.*;
 import java.util.concurrent.*;
 import javax.swing.*;
 import org.awaitility.*;
@@ -38,6 +39,7 @@ import org.hamcrest.core.*;
 import org.kruijff.utilities.swing.exceptions.*;
 import org.kruijff.utilities.swing.fetchers.*;
 import org.kruijff.utilities.swing.matchers.*;
+import org.kruijff.utilities.swing.visitors.*;
 
 /**
  * @author Alex de Kruijff {@literal <swingutil@akruijff.dds.nl>}
@@ -82,6 +84,11 @@ public class SwingUtil {
         }
     }
 
+    public <T extends Window> void visitWindows(Window parent, Class<T> type, ComponentVisitor<T> visitor) {
+        Searcher<T> searcher = new Searcher<>(new WindowFetcher<>(), new TypeMatcher<>(type));
+        searcher.visitChilderen(parent, visitor);
+    }
+
     public void clickButton(Component parent, String name) {
         AbstractButton button = fetchChildNamed(parent, name, AbstractButton.class);
         SwingUtilities.invokeLater(() -> button.doClick());
@@ -107,6 +114,11 @@ public class SwingUtil {
         }
     }
 
+    public <T extends Window> void visitChild(Window parent, Class<T> type, ComponentVisitor<T> visitor) {
+        Searcher<T> searcher = new Searcher<>(new DefaultChilderenFetcher<>(), new TypeMatcher<>(type));
+        searcher.visitChilderen(parent, visitor);
+    }
+
     private static class Searcher<T extends Component> {
 
         private final Fetcher<T> fetcher;
@@ -115,6 +127,17 @@ public class SwingUtil {
         private Searcher(Fetcher<T> fetcher, Matcher<T> matcher) {
             this.fetcher = fetcher;
             this.matcher = matcher;
+        }
+
+        @SuppressWarnings("unchecked")
+        private void visitChilderen(Component parent, ComponentVisitor<T> visitor) {
+            Arrays.stream(fetcher.getChilderen(parent))
+                    .filter(c -> c instanceof Window == false || c.isDisplayable())
+                    .forEach(t -> {
+                        if (matcher.childMatches(t))
+                            visitor.visit((T) t);
+                        visitChilderen(t, visitor);
+                    });
         }
 
         @SuppressWarnings("unchecked")
@@ -130,8 +153,8 @@ public class SwingUtil {
         @SuppressWarnings("unchecked")
         private T searchChild(Component child) {
             return child instanceof Window && !child.isDisplayable() ? null
-                   : matcher.childMatches(child) ? (T) child
-                     : searchChilderen(child);
+                    : matcher.childMatches(child) ? (T) child
+                    : searchChilderen(child);
         }
     }
 
